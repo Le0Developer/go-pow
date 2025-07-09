@@ -54,11 +54,15 @@ func (proof *Proof) UnmarshalText(buf []byte) error {
 	return err
 }
 
-func (req Request) MarshalText() ([]byte, error) {
-	return []byte(fmt.Sprintf("%s-%d-%s",
+func (req Request) String() string {
+	return fmt.Sprintf("%s-%d-%s",
 		req.Alg,
 		req.Difficulty,
-		string(base64.RawStdEncoding.EncodeToString(req.Nonce)))), nil
+		string(base64.RawStdEncoding.EncodeToString(req.Nonce)))
+}
+
+func (req Request) MarshalText() ([]byte, error) {
+	return []byte(req.String()), nil
 }
 
 func (req *Request) UnmarshalText(buf []byte) error {
