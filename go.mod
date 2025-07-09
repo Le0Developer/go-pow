@@ -1,1 +1,1 @@
-module github.com/bwesterb/go-pow
+module github.com/le0developer/go-pow

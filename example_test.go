@@ -2,7 +2,7 @@ package pow_test
 
 import (
 	"fmt"
-	"github.com/bwesterb/go-pow" // imported as pow
+	"github.com/le0developer/go-pow" // imported as pow
 )
 
 func Example() {
