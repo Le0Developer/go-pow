@@ -32,7 +32,7 @@ type Proof struct {
 	buf []byte
 }
 
-// Convenience function to create a new sha3bday proof-of-work request
+// Convenience function to create a new sha2bday proof-of-work request
 // as a string
 func NewRequest(difficulty uint32, nonce []byte) string {
 	req := Request{
