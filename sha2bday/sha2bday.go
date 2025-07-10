@@ -1,10 +1,34 @@
-package pow
+package sha2bday
 
 import (
 	"bytes"
 	"crypto/sha256"
 	"encoding/binary"
+
+	"github.com/le0developer/go-pow"
 )
+
+const (
+	Sha2BDay pow.AlgorithmName = "sha2bday"
+)
+
+func init() {
+	pow.RegisterAlgorithm(sha2bdayAlgorithm{})
+}
+
+type sha2bdayAlgorithm struct{}
+
+func (sha2bdayAlgorithm) Name() pow.AlgorithmName {
+	return Sha2BDay
+}
+
+func (sha2bdayAlgorithm) Fulfil(req pow.Request, data []byte) ([]byte, error) {
+	return fulfilSha2BDay(req.Nonce, req.Difficulty, data), nil
+}
+
+func (sha2bdayAlgorithm) Verify(req pow.Request, proof []byte, data []byte) bool {
+	return checkSha2BDay(proof, req.Nonce, data, req.Difficulty)
+}
 
 func checkSha2BDay(proof []byte, nonce, data []byte, diff uint32) bool {
 	if len(proof) != 24 {

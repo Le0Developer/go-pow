@@ -8,17 +8,10 @@ import (
 	"strings"
 )
 
-type Algorithm string
-
-const (
-	Sha2BDay Algorithm = "sha2bday"
-)
-
 // Represents a proof-of-work request.
 type Request struct {
-
 	// The requested algorithm
-	Alg Algorithm
+	Alg AlgorithmName
 
 	// The requested difficulty
 	Difficulty uint32
@@ -28,30 +21,32 @@ type Request struct {
 }
 
 // Represents a completed proof-of-work
-type Proof struct {
-	buf []byte
-}
+type Proof []byte
 
 // Convenience function to create a new sha2bday proof-of-work request
 // as a string
-func NewRequest(difficulty uint32, nonce []byte) string {
+func NewRequest(difficulty uint32, nonce []byte, name AlgorithmName) string {
 	req := Request{
 		Difficulty: difficulty,
 		Nonce:      nonce,
-		Alg:        Sha2BDay,
+		Alg:        name,
 	}
 	s, _ := req.MarshalText()
 	return string(s)
 }
 
 func (proof Proof) MarshalText() ([]byte, error) {
-	return []byte(base64.RawStdEncoding.EncodeToString(proof.buf)), nil
+	return []byte(base64.RawStdEncoding.EncodeToString(proof)), nil
 }
 
 func (proof *Proof) UnmarshalText(buf []byte) error {
 	var err error
-	proof.buf, err = base64.RawStdEncoding.DecodeString(string(buf))
-	return err
+	buf, err = base64.RawStdEncoding.DecodeString(string(buf))
+	if err != nil {
+		return err
+	}
+	*proof = buf
+	return nil
 }
 
 func (req Request) String() string {
@@ -70,10 +65,7 @@ func (req *Request) UnmarshalText(buf []byte) error {
 	if len(bits) != 3 {
 		return fmt.Errorf("There should be two dashes in a PoW request")
 	}
-	alg := Algorithm(bits[0])
-	if alg != Sha2BDay {
-		return fmt.Errorf("%s: unsupported algorithm", bits[0])
-	}
+	alg := AlgorithmName(bits[0])
 	req.Alg = alg
 	diff, err := strconv.Atoi(bits[1])
 	if err != nil {
@@ -103,13 +95,16 @@ func Check(request, proof string, data []byte) (bool, error) {
 }
 
 // Fulfil the proof-of-work request.
-func (req *Request) Fulfil(data []byte) Proof {
-	switch req.Alg {
-	case Sha2BDay:
-		return Proof{fulfilSha2BDay(req.Nonce, req.Difficulty, data)}
-	default:
-		panic("No such algorithm")
+func (req *Request) Fulfil(data []byte) (Proof, error) {
+	alg, ok := registeredAlgorithms[req.Alg]
+	if !ok {
+		return nil, fmt.Errorf("No such algorithm: %s", req.Alg)
 	}
+	res, err := alg.Fulfil(*req, data)
+	if err != nil {
+		return nil, err
+	}
+	return Proof(res), nil
 }
 
 // Convenience function to fulfil the proof of work request
@@ -119,17 +114,19 @@ func Fulfil(request string, data []byte) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	proof := req.Fulfil(data)
+	proof, err := req.Fulfil(data)
+	if err != nil {
+		return "", err
+	}
 	s, _ := proof.MarshalText()
 	return string(s), nil
 }
 
 // Check whether the proof is ok
 func (proof *Proof) Check(req Request, data []byte) bool {
-	switch req.Alg {
-	case Sha2BDay:
-		return checkSha2BDay(proof.buf, req.Nonce, data, req.Difficulty)
-	default:
-		panic("No such algorithm")
+	alg, ok := registeredAlgorithms[req.Alg]
+	if !ok {
+		return false
 	}
+	return alg.Verify(req, *proof, data)
 }
