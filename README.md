@@ -1,12 +1,16 @@
-go-pow
-======
+# go-pow
 
-`go-pow` is a simple Go package to add (asymmetric) *Proof of Work* to your service.
+`go-pow` is a simple Go package to add (asymmetric) _Proof of Work_ to your service.
 
 To create a Proof-of-Work request (with difficulty 5), use `pow.NewRequest`:
 
 ```go
-req := pow.NewRequest(5, someRandomNonce)
+import (
+	"github.com/le0developer/go-pow"
+	"github.com/le0developer/go-pow/sha2bday"
+)
+
+req := pow.NewRequest(5, someRandomNonce, sha2bday.Sha2BDay)
 ```
 
 This returns a string like `sha2bday-5-c29tZSByYW5kb20gbm9uY2U`,
@@ -14,19 +18,39 @@ which can be passed on to the client.
 The client fulfils the proof of work by running `pow.Fulfil`:
 
 ```go
+import (
+	"github.com/le0developer/go-pow"
+	_ "github.com/le0developer/go-pow/sha2bday"
+)
+
 proof, _ := pow.Fulfil(req, []byte("some bound data"))
 ```
 
-The client returns the proof (in this case  `AAAAAAAAAAMAAAAAAAAADgAAAAAAAAAb`)
+The client returns the proof (in this case `AAAAAAAAAAMAAAAAAAAADgAAAAAAAAAb`)
 to the server, which can check it is indeed a valid proof of work, by running:
 
-
-```	go
+```go
 ok, _ := pow.Check(req, proof, []byte("some bound data"))
 ```
 
-Notes
------
+## Supported Algorithms
+
+- `sha2bday`: SHA-256 Birthday Attack. Import `github.com/le0developer/go-pow/sha2bday`
+  to use this algorithm.
+  This algorithm uses SHA-256 to perform a birthday attack on the hash function.
+  SHA-256 on its own is not GPU-resistant, but the birthday attack makes it
+  memory-hard and thus GPU-resistant.
+
+## Registry
+
+This package supports extending the built-in algorithms. You can do so by implementing
+your own `Algorithm` and registering it with `pow.RegisterAlgorithm`.
+
+See more details in the [registry.go file](./registry.go) and the implementation of
+[sha2bday](./sha2bday/sha2bday.go).
+
+## Notes
+
 1. There should be at least sufficient randomness in either the `nonce` passed to
    `NewRequest` or the `data` passed to `Fulfil` and `Check`.
    Thus it is fine to use the same bound `data` for every client, if every client
@@ -48,10 +72,7 @@ Notes
    Fulfil on Difficulty=20 	     200	   6887722 ns/op
    ```
 
-To do
------
+## To do
 
- - Support for [equihash](https://www.cryptolux.org/index.php/Equihash) would be nice.
- - Port to Python, Java, Javascript, ...
- - Parallelize.
-
+- Support for [equihash](https://www.cryptolux.org/index.php/Equihash) would be nice.
+- Port to Python, Java, Javascript, ...
