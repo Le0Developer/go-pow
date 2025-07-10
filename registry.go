@@ -10,6 +10,11 @@ type Algorithm interface {
 
 var registeredAlgorithms = make(map[AlgorithmName]Algorithm)
 
+// This function is not thread-safe, so it should be called only once
+// during the initialization of the application.
+// Preferably call it in the init() function of the package
+// that implements the Algorithm interface.
+// See the [sha2bday](./sha2bday) package for an example.
 func RegisterAlgorithm(alg Algorithm) {
 	if alg == nil {
 		return
