@@ -41,14 +41,13 @@ func UnmarshalRequest(request string) (Request, error) {
 }
 
 // String returns a string representation of the request with the following parts separated by dashes:
-//   - Version (always "1")
 //   - Algorithm name (e.g., "sha2bday")
 //   - Difficulty (as a decimal number)
 //   - Nonce (base64 encoded)
 //
 // This can be sent to the client to solve.
 func (req Request) String() string {
-	return "1-" + string(req.Alg) + "-" + strconv.FormatUint(uint64(req.Difficulty), 10) + "-" +
+	return string(req.Alg) + "-" + strconv.FormatUint(uint64(req.Difficulty), 10) + "-" +
 		string(base64.RawStdEncoding.EncodeToString(req.Nonce))
 }
 
@@ -62,18 +61,18 @@ var ErrInvalidRequest = errors.New("invalid request format")
 
 // UnmarshalText implements the encoding.TextUnmarshaler interface for Request.
 func (req *Request) UnmarshalText(buf []byte) error {
-	bits := strings.SplitN(string(buf), "-", 4)
-	if len(bits) != 4 || bits[0] != "1" {
+	bits := strings.SplitN(string(buf), "-", 3)
+	if len(bits) != 3 {
 		return ErrInvalidRequest
 	}
-	alg := AlgorithmName(bits[1])
+	alg := AlgorithmName(bits[0])
 	req.Alg = alg
-	diff, err := strconv.ParseUint(bits[2], 10, 32)
+	diff, err := strconv.ParseUint(bits[1], 10, 32)
 	if err != nil {
 		return err
 	}
 	req.Difficulty = uint32(diff)
-	req.Nonce, err = base64.RawStdEncoding.DecodeString(bits[3])
+	req.Nonce, err = base64.RawStdEncoding.DecodeString(bits[2])
 	if err != nil {
 		return err
 	}
